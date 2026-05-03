@@ -22,7 +22,7 @@ def run_doka_v2nodes():
         current_time = datetime.now()
         cutoff_time = current_time - timedelta(hours=MAX_AGE_HOURS)
         
-        print(f"🔄 [{current_time.strftime('%H:%M:%S')}] كشط V2Nodes (5 بروتوكولات)...")
+        print(f"🔄 [{current_time.strftime('%H:%M:%S')}] كشط V2Nodes...")
         print(f"⏳ الحذف: أقدم من {MAX_AGE_HOURS} ساعة")
         
         response = requests.get(url, headers=headers, timeout=30)
@@ -30,13 +30,12 @@ def run_doka_v2nodes():
             print(f"❌ خطأ: {response.status_code}")
             sys.exit(1)
         
-        # ====== 5 بروتوكولات ======
         patterns = {
-            'vmess':  r'vmess://[^\s<"\'<>]+',
-            'vless':  r'vless://[^\s<"\'<>]+',
+            'vmess': r'vmess://[^\s<"\'<>]+',
+            'vless': r'vless://[^\s<"\'<>]+',
             'trojan': r'trojan://[^\s<"\'<>]+',
-            'ss':     r'ss://[^\s<"\'<>]+',
-            'ssh':    r'ssh://[^\s<"\'<>]+',
+            'ss': r'ss://[^\s<"\'<>]+',
+            'ssh': r'ssh://[^\s<"\'<>]+',
         }
         
         all_links = []
@@ -53,7 +52,6 @@ def run_doka_v2nodes():
             print("⚠️ لم يتم العثور على روابط.")
             sys.exit(1)
         
-        # تحميل المخزون السابق
         old_servers = {}
         try:
             if os.path.exists("servers_cache.json"):
@@ -70,13 +68,8 @@ def run_doka_v2nodes():
             added_time = old_servers.get(link, current_time.isoformat())
             cache_servers.append({"link": link, "added_time": added_time})
         
-        cache_data = {
-            "last_update": current_time.isoformat(),
-            "max_age_hours": MAX_AGE_HOURS,
-            "servers": cache_servers
-        }
         with open("servers_cache.json", "w", encoding="utf-8") as f:
-            json.dump(cache_data, f, ensure_ascii=False)
+            json.dump({"last_update": current_time.isoformat(), "max_age_hours": MAX_AGE_HOURS, "servers": cache_servers}, f, ensure_ascii=False)
         
         servers_by_protocol = {"vmess": [], "vless": [], "trojan": [], "ss": [], "ssh": []}
         countries_count = {}
@@ -87,11 +80,11 @@ def run_doka_v2nodes():
         warning_count = 0
         
         proto_info = {
-            'VMESS':  {'color': 'orange', 'icon': '🟠', 'gradient': 'from-orange-400 to-red-400', 'name': 'VMess'},
-            'VLESS':  {'color': 'blue', 'icon': '🔵', 'gradient': 'from-blue-400 to-cyan-400', 'name': 'VLESS'},
+            'VMESS': {'color': 'orange', 'icon': '🟠', 'gradient': 'from-orange-400 to-red-400', 'name': 'VMess'},
+            'VLESS': {'color': 'blue', 'icon': '🔵', 'gradient': 'from-blue-400 to-cyan-400', 'name': 'VLESS'},
             'TROJAN': {'color': 'purple', 'icon': '🟣', 'gradient': 'from-purple-400 to-pink-400', 'name': 'Trojan'},
-            'SS':     {'color': 'green', 'icon': '🟢', 'gradient': 'from-green-400 to-emerald-400', 'name': 'Shadowsocks'},
-            'SSH':    {'color': 'slate', 'icon': '🔒', 'gradient': 'from-slate-400 to-gray-500', 'name': 'SSH'},
+            'SS': {'color': 'green', 'icon': '🟢', 'gradient': 'from-green-400 to-emerald-400', 'name': 'Shadowsocks'},
+            'SSH': {'color': 'slate', 'icon': '🔒', 'gradient': 'from-slate-400 to-gray-500', 'name': 'SSH'},
         }
         
         for link in clean_links:
@@ -196,12 +189,13 @@ def run_doka_v2nodes():
         print("✅ stats.json")
         
         servers_json = json.dumps(all_servers_data, ensure_ascii=False)
+        stats_json = json.dumps(stats_data, ensure_ascii=False)
         update_time_str = current_time.strftime("%H:%M")
         update_date_str = current_time.strftime("%Y/%m/%d")
         greetings_json = json.dumps(get_all_greetings(), ensure_ascii=False)
         
         html = generate_html(
-            servers_json, stats_data, servers_by_protocol,
+            servers_json, stats_json, servers_by_protocol,
             total_servers, new_count, deleted_count, avg_ping,
             most_country, most_country_count, active_count, idle_count, warning_count,
             update_time_str, update_date_str,
@@ -220,7 +214,6 @@ def run_doka_v2nodes():
         print(f"✅ [DOKA V2NODES] {total_servers} سيرفر | 🆕 {new_count} | 🗑️ {deleted_count}")
         print(f"   🟢 نشط: {active_count} | 💤 خامل: {idle_count} | ⚠️ خطر: {warning_count}")
         print(f"   🌍 {most_country} ({most_country_count}) | ⚡ {avg_ping}ms")
-        print(f"{'='*50}\n")
         
         with open("changelog.txt", "a", encoding="utf-8") as log:
             log.write(f"[{current_time.strftime('%Y-%m-%d %H:%M:%S')}] {total_servers} | 🟢{active_count} 💤{idle_count} ⚠️{warning_count}\n")
@@ -229,6 +222,8 @@ def run_doka_v2nodes():
             
     except Exception as e:
         print(f"❌ خطأ: {e}")
+        import traceback
+        traceback.print_exc()
         sys.exit(1)
 
 
@@ -239,10 +234,6 @@ def detect_country(link_lower):
         'united kingdom': ('بريطانيا', '🇬🇧'), 'japan': ('اليابان', '🇯🇵'),
         'france': ('فرنسا', '🇫🇷'), 'canada': ('كندا', '🇨🇦'),
         'turkey': ('تركيا', '🇹🇷'), 'uae': ('الإمارات', '🇦🇪'),
-        'hong kong': ('هونغ كونغ', '🇭🇰'), 'india': ('الهند', '🇮🇳'),
-        'russia': ('روسيا', '🇷🇺'), 'brazil': ('البرازيل', '🇧🇷'),
-        'australia': ('أستراليا', '🇦🇺'), 'south korea': ('كوريا', '🇰🇷'),
-        'sweden': ('السويد', '🇸🇪'), 'italy': ('إيطاليا', '🇮🇹'),
     }
     for key, (country, flag) in country_map.items():
         if key in link_lower:
@@ -251,36 +242,16 @@ def detect_country(link_lower):
 
 
 def get_all_greetings():
-    return [
-        "💪 أقوى السيرفرات بين يديك.",
-        "⚡ سرعة وأمان في متناول اليد.",
-        "🚀 انطلق بلا حدود مع V2Ray.",
-        "🛡️ درعك الرقمي جاهز.",
-        "🔐 خصوصيتك أولويتنا.",
-        "🌟 سيرفرات اليوم جاهزة للتصفح.",
-        "💛 أهلاً بك! تصفح براحة تامة.",
-        "📡 اتصال آمن · سرعة فائقة.",
-    ]
+    return ["💪 أقوى السيرفرات بين يديك.", "⚡ سرعة وأمان.", "🚀 انطلق بلا حدود.", "🛡️ درعك الرقمي جاهز."]
 
 
 def create_manifest():
-    manifest = {
-        "name": "DOKA V2Nodes",
-        "short_name": "DOKA V2Nodes",
-        "start_url": "/",
-        "display": "standalone",
-        "background_color": "#06060f",
-        "theme_color": "#6366f1",
-        "lang": "ar",
-        "dir": "rtl"
-    }
     with open("manifest.json", "w", encoding="utf-8") as f:
-        json.dump(manifest, f, ensure_ascii=False, indent=2)
+        json.dump({"name": "DOKA V2Nodes", "short_name": "DOKA", "start_url": "/", "display": "standalone", "background_color": "#06060f", "theme_color": "#6366f1", "lang": "ar", "dir": "rtl"}, f)
 
 
-def generate_html(servers_json, stats_data, servers_by_protocol, total_servers, new_count, deleted_count, avg_ping, most_country, most_country_count, active_count, idle_count, warning_count, update_time_str, update_date_str, current_time_iso, max_age_hours, greetings_json):
+def generate_html(servers_json, stats_json, servers_by_protocol, total_servers, new_count, deleted_count, avg_ping, most_country, most_country_count, active_count, idle_count, warning_count, update_time_str, update_date_str, current_time_iso, max_age_hours, greetings_json):
     
-    # تبويبات
     filter_tabs_html = f'''
     <button class="tab-btn active px-4 py-2 rounded-full text-xs font-medium" data-filter="all">
         <i class="fas fa-globe ml-1"></i> الكل (<span>{total_servers}</span>)
@@ -289,11 +260,7 @@ def generate_html(servers_json, stats_data, servers_by_protocol, total_servers, 
         🟢 نشط (<span>{active_count}</span>)
     </button>'''
     
-    for proto_key, proto_name, icon in [
-        ("vmess", "VMess", "🟠"), ("vless", "VLESS", "🔵"),
-        ("trojan", "Trojan", "🟣"), ("ss", "SS", "🟢"),
-        ("ssh", "SSH", "🔒")
-    ]:
+    for proto_key, proto_name, icon in [("vmess", "VMess", "🟠"), ("vless", "VLESS", "🔵"), ("trojan", "Trojan", "🟣"), ("ss", "SS", "🟢"), ("ssh", "SSH", "🔒")]:
         count = len(servers_by_protocol.get(proto_key, []))
         if count > 0:
             filter_tabs_html += f'''
@@ -309,11 +276,9 @@ def generate_html(servers_json, stats_data, servers_by_protocol, total_servers, 
     html = f'''<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DOKA V2Nodes | حرية التصفح</title>
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#06060f">
+    <link rel="manifest" href="manifest.json"><meta name="theme-color" content="#06060f">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
@@ -365,114 +330,16 @@ def generate_html(servers_json, stats_data, servers_by_protocol, total_servers, 
     </style>
 </head>
 <body class="antialiased relative z-10">
-    <div class="aurora-container">
-        <div class="aurora aurora-1"></div><div class="aurora aurora-2"></div>
-        <div class="aurora aurora-3"></div><div class="aurora aurora-4"></div>
-    </div>
+    <div class="aurora-container"><div class="aurora aurora-1"></div><div class="aurora aurora-2"></div><div class="aurora aurora-3"></div><div class="aurora aurora-4"></div></div>
     <div class="orbs-container" id="orbs"></div>
-
-    <nav class="glass-nav sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-5 py-4 flex flex-wrap justify-between items-center text-sm">
-            <div class="flex items-center gap-4">
-                <span class="text-3xl font-black bg-gradient-to-r from-indigo-300 via-purple-300 to-pink-300 bg-clip-text text-transparent">DOKA</span>
-                <span class="text-gray-400 text-xs">| V2Nodes</span>
-            </div>
-            <div class="flex items-center gap-5 flex-wrap">
-                <span id="user-ip" class="font-mono text-gray-300 text-xs">...</span>
-                <span class="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
-                <span class="text-red-400 font-bold text-xs">غير محمي</span>
-                <span id="live-clock" class="font-mono text-xs text-gray-400">--:--:--</span>
-                <span class="visitor-badge px-3 py-1.5 text-xs text-green-400"><i class="fas fa-bolt"></i> <span id="visitor-count">--</span></span>
-            </div>
-        </div>
-    </nav>
-
-    <section class="relative py-16 md:py-24 text-center px-4">
-        <div class="max-w-4xl mx-auto">
-            <div class="inline-flex items-center gap-2 glass rounded-full px-5 py-2.5 text-xs text-gray-300 mb-8">
-                <span class="w-2.5 h-2.5 bg-green-400 rounded-full animate-pulse"></span>
-                <span id="countdown-next">التحديث القادم بعد: --:--:--</span>
-                <span>· ⏳ {max_age_hours} ساعة</span>
-            </div>
-            <h1 class="text-5xl md:text-8xl font-black mb-6 leading-none">
-                <span class="bg-gradient-to-r from-indigo-200 via-purple-200 to-pink-200 bg-clip-text text-transparent">حرية التصفح</span>
-            </h1>
-            <p class="text-gray-400 text-lg mb-3">VMess · VLESS · Trojan · Shadowsocks · SSH</p>
-            <p class="text-gray-500 text-sm mb-10" id="greeting-message"></p>
-            
-            <div class="flex flex-wrap justify-center gap-4 mb-6">
-                <div class="stat-card px-6 py-4 text-center min-w-[90px]">
-                    <span class="text-3xl font-black bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">{total_servers}</span>
-                    <p class="text-gray-500 text-[10px] mt-1.5">سيرفر</p>
-                </div>
-                <div class="stat-card px-6 py-4 text-center min-w-[90px]">
-                    <span class="text-3xl font-black text-green-400">{active_count}</span>
-                    <p class="text-gray-500 text-[10px] mt-1.5">🟢 نشط</p>
-                </div>
-                <div class="stat-card px-6 py-4 text-center min-w-[90px]">
-                    <span class="text-3xl font-black text-amber-400">{idle_count}</span>
-                    <p class="text-gray-500 text-[10px] mt-1.5">💤 خامل</p>
-                </div>
-                <div class="stat-card px-6 py-4 text-center min-w-[90px]">
-                    <span class="text-3xl font-black text-orange-400">{warning_count}</span>
-                    <p class="text-gray-500 text-[10px] mt-1.5">⚠️ خطر</p>
-                </div>
-                <div class="stat-card px-6 py-4 text-center min-w-[90px]">
-                    <span class="text-3xl font-black text-emerald-400">{new_count}</span>
-                    <p class="text-gray-500 text-[10px] mt-1.5">🆕 جديد</p>
-                </div>
-                <div class="stat-card px-6 py-4 text-center min-w-[110px]">
-                    <span class="text-xl font-black text-cyan-400">{most_country}</span>
-                    <p class="text-gray-500 text-[10px] mt-1.5">🌍 الأكثر</p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <section class="max-w-7xl mx-auto px-4 py-2">
-        <div class="flex flex-wrap justify-center gap-2" id="filter-tabs">{filter_tabs_html}</div>
-        <div class="flex justify-center mt-4">
-            <div class="glass flex items-center gap-3 px-5 py-3 rounded-full max-w-md w-full">
-                <i class="fas fa-search text-gray-500 text-sm"></i>
-                <input type="text" id="search-input" placeholder="ابحث عن دولة أو بروتوكول..." class="bg-transparent border-none outline-none text-white text-sm w-full placeholder-gray-600">
-                <button onclick="document.getElementById('search-input').value=''; renderServers(currentFilter);" class="text-gray-600 hover:text-white text-sm">✕</button>
-            </div>
-        </div>
-    </section>
-
-    <section class="max-w-7xl mx-auto px-4 py-8">
-        <h2 class="text-xl font-bold mb-6 text-gray-300"><i class="fas fa-server text-indigo-400 ml-2"></i> سيرفرات V2Nodes <span class="text-xs text-gray-600">· 🟢{active_count} 💤{idle_count} ⚠️{warning_count}</span><span class="text-xs text-gray-600" id="last-copied-info"></span></h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5" id="servers-grid"></div>
-        <div id="no-servers-msg" class="text-center py-20 text-gray-600 hidden"><i class="fas fa-search text-4xl mb-4 opacity-20"></i><p class="text-sm">لا توجد سيرفرات</p></div>
-    </section>
-
-    <footer class="border-t border-white/5 mt-16">
-        <div class="max-w-7xl mx-auto px-4 py-10 text-center">
-            <p class="text-gray-600 text-xs">© 2026 DOKA V2Nodes</p>
-            <p class="text-gray-700 text-[10px] mt-1.5">تحديث كل 3 ساعات · ⏳ حذف بعد {max_age_hours} ساعة</p>
-            <button id="show-stats-btn" class="mt-5 glass px-6 py-2.5 rounded-full text-xs text-gray-400 hover:text-white"><i class="fas fa-chart-pie ml-1.5"></i> الإحصائيات</button>
-            <button id="clear-fav-btn" class="mt-3 block mx-auto text-[10px] text-gray-700 hover:text-red-400" style="display:none;"><i class="fas fa-trash-alt ml-1"></i> حذف المفضلة</button>
-        </div>
-    </footer>
-
-    <div id="stats-page" class="max-w-4xl mx-auto px-4 py-16 hidden">
-        <div class="glass-card p-8" style="opacity:1;transform:none;">
-            <h2 class="text-3xl font-bold text-center mb-10">📊 الإحصائيات</h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div><h3 class="text-base font-bold mb-4 text-gray-400">البروتوكولات</h3><canvas id="proto-chart"></canvas></div>
-                <div><h3 class="text-base font-bold mb-4 text-gray-400">الدول</h3><canvas id="country-chart"></canvas></div>
-            </div>
-            <p class="text-center text-gray-500 mt-8 text-xs">آخر تحديث: <span id="stats-last-update"></span></p>
-            <button id="back-to-servers" class="mt-8 btn-primary px-8 py-3 rounded-2xl mx-auto block text-sm"><i class="fas fa-arrow-right ml-2"></i> عودة</button>
-        </div>
-    </div>
-
+    <nav class="glass-nav sticky top-0 z-50"><div class="max-w-7xl mx-auto px-5 py-4 flex flex-wrap justify-between items-center text-sm"><div class="flex items-center gap-4"><span class="text-3xl font-black bg-gradient-to-r from-indigo-300 via-purple-300 to-pink-300 bg-clip-text text-transparent">DOKA</span><span class="text-gray-400 text-xs">| V2Nodes</span></div><div class="flex items-center gap-5 flex-wrap"><span id="user-ip" class="font-mono text-gray-300 text-xs">...</span><span class="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span><span class="text-red-400 font-bold text-xs">غير محمي</span><span id="live-clock" class="font-mono text-xs text-gray-400">--:--:--</span><span class="visitor-badge px-3 py-1.5 text-xs text-green-400"><i class="fas fa-bolt"></i> <span id="visitor-count">--</span></span></div></div></nav>
+    <section class="relative py-16 md:py-24 text-center px-4"><div class="max-w-4xl mx-auto"><div class="inline-flex items-center gap-2 glass rounded-full px-5 py-2.5 text-xs text-gray-300 mb-8"><span class="w-2.5 h-2.5 bg-green-400 rounded-full animate-pulse"></span><span id="countdown-next">التحديث القادم بعد: --:--:--</span><span>· ⏳ {max_age_hours} ساعة</span></div><h1 class="text-5xl md:text-8xl font-black mb-6 leading-none"><span class="bg-gradient-to-r from-indigo-200 via-purple-200 to-pink-200 bg-clip-text text-transparent">حرية التصفح</span></h1><p class="text-gray-400 text-lg mb-3">VMess · VLESS · Trojan · Shadowsocks · SSH</p><p class="text-gray-500 text-sm mb-10" id="greeting-message"></p><div class="flex flex-wrap justify-center gap-4 mb-6"><div class="stat-card px-6 py-4 text-center min-w-[90px]"><span class="text-3xl font-black bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">{total_servers}</span><p class="text-gray-500 text-[10px] mt-1.5">سيرفر</p></div><div class="stat-card px-6 py-4 text-center min-w-[90px]"><span class="text-3xl font-black text-green-400">{active_count}</span><p class="text-gray-500 text-[10px] mt-1.5">🟢 نشط</p></div><div class="stat-card px-6 py-4 text-center min-w-[90px]"><span class="text-3xl font-black text-amber-400">{idle_count}</span><p class="text-gray-500 text-[10px] mt-1.5">💤 خامل</p></div><div class="stat-card px-6 py-4 text-center min-w-[90px]"><span class="text-3xl font-black text-orange-400">{warning_count}</span><p class="text-gray-500 text-[10px] mt-1.5">⚠️ خطر</p></div><div class="stat-card px-6 py-4 text-center min-w-[90px]"><span class="text-3xl font-black text-emerald-400">{new_count}</span><p class="text-gray-500 text-[10px] mt-1.5">🆕 جديد</p></div><div class="stat-card px-6 py-4 text-center min-w-[110px]"><span class="text-xl font-black text-cyan-400">{most_country}</span><p class="text-gray-500 text-[10px] mt-1.5">🌍 الأكثر</p></div></div></div></section>
+    <section class="max-w-7xl mx-auto px-4 py-2"><div class="flex flex-wrap justify-center gap-2" id="filter-tabs">{filter_tabs_html}</div><div class="flex justify-center mt-4"><div class="glass flex items-center gap-3 px-5 py-3 rounded-full max-w-md w-full"><i class="fas fa-search text-gray-500 text-sm"></i><input type="text" id="search-input" placeholder="ابحث عن دولة أو بروتوكول..." class="bg-transparent border-none outline-none text-white text-sm w-full placeholder-gray-600"><button onclick="document.getElementById('search-input').value=''; renderServers(currentFilter);" class="text-gray-600 hover:text-white text-sm">✕</button></div></div></section>
+    <section class="max-w-7xl mx-auto px-4 py-8"><h2 class="text-xl font-bold mb-6 text-gray-300"><i class="fas fa-server text-indigo-400 ml-2"></i> سيرفرات V2Nodes <span class="text-xs text-gray-600">· 🟢{active_count} 💤{idle_count} ⚠️{warning_count}</span><span class="text-xs text-gray-600" id="last-copied-info"></span></h2><div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5" id="servers-grid"></div><div id="no-servers-msg" class="text-center py-20 text-gray-600 hidden"><i class="fas fa-search text-4xl mb-4 opacity-20"></i><p class="text-sm">لا توجد سيرفرات</p></div></section>
+    <footer class="border-t border-white/5 mt-16"><div class="max-w-7xl mx-auto px-4 py-10 text-center"><p class="text-gray-600 text-xs">© 2026 DOKA V2Nodes</p><p class="text-gray-700 text-[10px] mt-1.5">تحديث كل 3 ساعات · ⏳ حذف بعد {max_age_hours} ساعة</p><button id="show-stats-btn" class="mt-5 glass px-6 py-2.5 rounded-full text-xs text-gray-400 hover:text-white"><i class="fas fa-chart-pie ml-1.5"></i> الإحصائيات</button><button id="clear-fav-btn" class="mt-3 block mx-auto text-[10px] text-gray-700 hover:text-red-400" style="display:none;"><i class="fas fa-trash-alt ml-1"></i> حذف المفضلة</button></div></footer>
+    <div id="stats-page" class="max-w-4xl mx-auto px-4 py-16 hidden"><div class="glass-card p-8" style="opacity:1;transform:none;"><h2 class="text-3xl font-bold text-center mb-10">📊 الإحصائيات</h2><div class="grid grid-cols-1 md:grid-cols-2 gap-8"><div><h3 class="text-base font-bold mb-4 text-gray-400">البروتوكولات</h3><canvas id="proto-chart"></canvas></div><div><h3 class="text-base font-bold mb-4 text-gray-400">الدول</h3><canvas id="country-chart"></canvas></div></div><p class="text-center text-gray-500 mt-8 text-xs">آخر تحديث: <span id="stats-last-update"></span></p><button id="back-to-servers" class="mt-8 btn-primary px-8 py-3 rounded-2xl mx-auto block text-sm"><i class="fas fa-arrow-right ml-2"></i> عودة</button></div></div>
     <div id="toast" class="toast fixed bottom-8 left-1/2 -translate-x-1/2 px-8 py-4 rounded-2xl text-sm font-bold opacity-0 transition-all duration-500 pointer-events-none z-50 text-white" style="transform: translate(-50%, 30px);"><span id="toast-msg">تم النسخ!</span></div>
-
-    <div id="qr-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/70 backdrop-blur-sm" onclick="closeQRModal(event)">
-        <div class="glass-card p-8" onclick="event.stopPropagation()" style="opacity:1;transform:none;"><div id="qr-modal-content" class="flex justify-center bg-white p-4 rounded-xl"></div><button onclick="closeQRModal()" class="mt-6 w-full btn-primary py-3 rounded-xl text-sm">إغلاق</button></div>
-    </div>
-
+    <div id="qr-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/70 backdrop-blur-sm" onclick="closeQRModal(event)"><div class="glass-card p-8" onclick="event.stopPropagation()" style="opacity:1;transform:none;"><div id="qr-modal-content" class="flex justify-center bg-white p-4 rounded-xl"></div><button onclick="closeQRModal()" class="mt-6 w-full btn-primary py-3 rounded-xl text-sm">إغلاق</button></div></div>
     <script>
         const serversData = {servers_json};
         const statsData = {stats_json};
@@ -487,7 +354,7 @@ def generate_html(servers_json, stats_data, servers_by_protocol, total_servers, 
         function toggleFavorite(link) {{ let f = getFavorites(); const i = f.indexOf(link); i > -1 ? (f.splice(i,1), showToast('أزيل 💔')) : (f.push(link), showToast('أضيف ⭐')); saveFavorites(f); renderServers(currentFilter); updateFavCount(); }}
         function updateFavCount() {{ const f = getFavorites(); document.getElementById('count-fav').textContent = f.length; const b = document.getElementById('fav-filter-btn'), c = document.getElementById('clear-fav-btn'); if (f.length > 0) {{ b.style.display = ''; c.style.display = ''; }} else {{ b.style.display = 'none'; c.style.display = 'none'; }} }}
         function showToast(m) {{ const t = document.getElementById('toast'); document.getElementById('toast-msg').textContent = m; t.style.opacity = '1'; t.style.transform = 'translate(-50%, 0)'; setTimeout(() => {{ t.style.opacity = '0'; t.style.transform = 'translate(-50%, 30px)'; }}, 2200); }}
-        function spawnConfetti() {{ const colors = ['#6366f1','#ec4899','#22c55e','#f59e0b','#3b82f6','#a855f7']; for (let i=0; i<40; i++) {{ const c = document.createElement('div'); c.className = 'confetti'; c.style.left = Math.random()*100+'%'; c.style.top = '-20px'; c.style.width = Math.random()*10+4+'px'; c.style.height = Math.random()*10+4+'px'; c.style.background = colors[Math.floor(Math.random()*colors.length)]; c.style.animationDuration = Math.random()*1.5+1+'s'; c.style.borderRadius = Math.random()>0.4 ? '50%' : '3px'; document.body.appendChild(c); setTimeout(() => c.remove(), 2000); }} }}
+        function spawnConfetti() {{ const colors = ['#6366f1','#ec4899','#22c55e','#f59e0b']; for (let i=0; i<30; i++) {{ const c = document.createElement('div'); c.className = 'confetti'; c.style.left = Math.random()*100+'%'; c.style.top = '-20px'; c.style.width = Math.random()*8+4+'px'; c.style.height = Math.random()*8+4+'px'; c.style.background = colors[Math.floor(Math.random()*colors.length)]; c.style.animationDuration = Math.random()*1.5+1+'s'; c.style.borderRadius = Math.random()>0.4 ? '50%' : '3px'; document.body.appendChild(c); setTimeout(() => c.remove(), 2000); }} }}
         window.copyText = (text) => {{ navigator.clipboard.writeText(text).then(() => {{ showToast('✅ تم النسخ! 🎉'); spawnConfetti(); localStorage.setItem('doka_v2nodes_last_copy', text); updateLastCopied(); }}); }};
         function updateLastCopied() {{ const l = localStorage.getItem('doka_v2nodes_last_copy'); if (l) document.getElementById('last-copied-info').textContent = '· آخر نسخ: ' + l.substring(0, 25) + '...'; }}
         window.showQR = (link) => {{ const m = document.getElementById('qr-modal'), c = document.getElementById('qr-modal-content'); c.innerHTML = ''; new QRCode(c, {{ text: link, width: 220, height: 220, colorDark: "#1e293b", colorLight: "#ffffff" }}); m.classList.remove('hidden'); m.classList.add('flex'); }};
@@ -521,21 +388,18 @@ def generate_html(servers_json, stats_data, servers_by_protocol, total_servers, 
         function cd() {{ const e = Math.floor((new Date() - updateTime) / 1000); const r = Math.max(0, UPDATE_INTERVAL - e); document.getElementById('countdown-next').textContent = `التحديث القادم بعد: ${{String(Math.floor(r/3600)).padStart(2,'0')}}:${{String(Math.floor((r%3600)/60)).padStart(2,'0')}}:${{String(r%60).padStart(2,'0')}}`; }} setInterval(cd, 1000); cd();
         document.getElementById('greeting-message').textContent = greetings[Math.floor(Math.random() * greetings.length)];
         setInterval(() => {{ document.getElementById('greeting-message').textContent = greetings[Math.floor(Math.random() * greetings.length)]; }}, 25000);
-        
-        (function() {{ const co = document.getElementById('orbs'); const cols = ['rgba(99,102,241,0.5)','rgba(236,72,153,0.4)','rgba(34,197,94,0.35)']; for (let i=0; i<20; i++) {{ const orb = document.createElement('div'); orb.className = 'orb'; orb.style.cssText = `width:${{Math.random()*60+20}}px;height:${{Math.random()*60+20}}px;left:${{Math.random()*100}}%;background:${{cols[Math.floor(Math.random()*cols.length)]}};animation-duration:${{Math.random()*25+20}}s;animation-delay:${{Math.random()*20}}s;filter:blur(${{Math.random()*8+4}}px);`; co.appendChild(orb); }} }})();
-        
+        (function() {{ const co = document.getElementById('orbs'); const cols = ['rgba(99,102,241,0.5)','rgba(236,72,153,0.4)']; for (let i=0; i<15; i++) {{ const orb = document.createElement('div'); orb.className = 'orb'; orb.style.cssText = `width:${{Math.random()*60+20}}px;height:${{Math.random()*60+20}}px;left:${{Math.random()*100}}%;background:${{cols[Math.floor(Math.random()*cols.length)]}};animation-duration:${{Math.random()*25+20}}s;animation-delay:${{Math.random()*20}}s;filter:blur(${{Math.random()*8+4}}px);`; co.appendChild(orb); }} }})();
         function uv() {{ document.getElementById('visitor-count').textContent = Math.max(1, {total_servers} + Math.floor(Math.random()*20)-8); }} uv(); setInterval(uv, 12000);
         
         document.getElementById('show-stats-btn').addEventListener('click', () => {{ document.querySelector('nav').style.display='none'; document.querySelector('section').style.display='none'; document.getElementById('filter-tabs').style.display='none'; document.getElementById('servers-grid').parentElement.style.display='none'; document.querySelector('footer').style.display='none'; document.querySelector('.aurora-container').style.display='none'; document.querySelector('.orbs-container').style.display='none'; document.getElementById('stats-page').classList.remove('hidden'); document.getElementById('stats-last-update').textContent = new Date(statsData.last_updated).toLocaleString('ar-IQ'); Object.values(chartInstances).forEach(c => c.destroy()); chartInstances = {{}};
             const ctx1 = document.getElementById('proto-chart').getContext('2d');
-            chartInstances.proto = new Chart(ctx1, {{ type: 'doughnut', data: {{ labels: Object.keys(statsData.by_protocol).map(p=>p.toUpperCase()), datasets: [{{ data: Object.values(statsData.by_protocol), backgroundColor: ['#f97316','#3b82f6','#a855f7','#22c55e','#64748b'], borderColor: 'rgba(255,255,255,0.05)', borderWidth: 4 }}] }}, options: {{ responsive: true, cutout: '65%', plugins: {{ legend: {{ position:'bottom', labels: {{ color:'#94a3b8', padding:16, font:{{family:'Tajawal',size:11}} }} }} }} }} }});
+            chartInstances.proto = new Chart(ctx1, {{ type: 'doughnut', data: {{ labels: Object.keys(statsData.by_protocol).map(p=>p.toUpperCase()), datasets: [{{ data: Object.values(statsData.by_protocol), backgroundColor: ['#f97316','#3b82f6','#a855f7','#22c55e','#64748b'], borderColor: 'rgba(255,255,255,0.05)', borderWidth: 4 }}] }}, options: {{ responsive: true, cutout: '65%', plugins: {{ legend: {{ position:'bottom', labels: {{ color:'#94a3b8', padding:16 }} }} }} }} }});
             const ctx2 = document.getElementById('country-chart').getContext('2d'); const co2 = statsData.countries || {{}};
-            chartInstances.country = new Chart(ctx2, {{ type: 'polarArea', data: {{ labels: Object.keys(co2), datasets: [{{ data: Object.values(co2), backgroundColor: ['#6366f1','#ec4899','#22c55e','#f59e0b','#3b82f6','#ef4444','#a855f7','#06b6d4'], borderColor: 'rgba(255,255,255,0.05)', borderWidth: 3 }}] }}, options: {{ responsive: true, scales: {{ r: {{ ticks: {{ display:false }}, grid: {{ color:'rgba(255,255,255,0.03)' }} }} }}, plugins: {{ legend: {{ position:'bottom', labels: {{ color:'#94a3b8', padding:14, font:{{family:'Tajawal',size:10}} }} }} }} }} }});
+            chartInstances.country = new Chart(ctx2, {{ type: 'polarArea', data: {{ labels: Object.keys(co2), datasets: [{{ data: Object.values(co2), backgroundColor: ['#6366f1','#ec4899','#22c55e','#f59e0b','#3b82f6','#ef4444','#a855f7'], borderColor: 'rgba(255,255,255,0.05)', borderWidth: 3 }}] }}, options: {{ responsive: true, scales: {{ r: {{ ticks: {{ display:false }}, grid: {{ color:'rgba(255,255,255,0.03)' }} }} }}, plugins: {{ legend: {{ position:'bottom', labels: {{ color:'#94a3b8', padding:14 }} }} }} }} }});
         }});
         
         document.getElementById('back-to-servers').addEventListener('click', () => location.reload());
         document.getElementById('clear-fav-btn').addEventListener('click', () => {{ if (confirm('حذف كل المفضلة؟')) {{ localStorage.removeItem('doka_v2nodes_fav'); updateFavCount(); if (currentFilter==='favorites') renderServers('all'); else renderServers(currentFilter); showToast('تم الحذف 🗑️'); }} }});
-        
         fetch('https://api.ipify.org?format=json').then(r=>r.json()).then(d=>document.getElementById('user-ip').textContent=d.ip).catch(()=>document.getElementById('user-ip').textContent='غير معروف');
         updateFavCount(); updateLastCopied(); renderServers('all');
     </script>
