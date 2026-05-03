@@ -1,0 +1,1 @@
+{"last_updated": "2026-05-03T08:45:23.133722", "source": "V2Nodes", "max_age_hours": 24, "total_servers": 28, "new_servers": 28, "deleted_old": 0, "active_servers": 28, "idle_servers": 0, "warning_servers": 0, "avg_ping": 124, "most_country": "غير معروف", "most_country_count": 28, "countries": {"غير معروف": 28}, "by_protocol": {"vmess": 1, "vless": 7, "trojan": 5, "ss": 15}}
