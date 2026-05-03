@@ -1,0 +1,75 @@
+name: 🔄 تحديث DOKA V2Nodes
+
+on:
+  schedule:
+    - cron: '0 */3 * * *'
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  scrape-and-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    
+    steps:
+      - name: 📥 1. استنساخ المستودع
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 🐍 2. تنصيب بايثون
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: 📦 3. تنصيب مكتبات بايثون
+        run: pip install requests
+
+      - name: 🚀 4. تشغيل سكريبت الكشط
+        run: python scraper.py
+        timeout-minutes: 10
+
+      - name: 📊 5. التحقق من وجود تغييرات
+        id: check_changes
+        run: |
+          if [[ -n "$(git status --porcelain)" ]]; then
+            echo "changes_detected=true" >> $GITHUB_OUTPUT
+          else
+            echo "changes_detected=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: 📤 6. رفع التغييرات إلى المستودع
+        if: steps.check_changes.outputs.changes_detected == 'true'
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m "🔄 تحديث تلقائي V2Nodes - $(date +'%Y-%m-%d %H:%M')"
+          git push origin main
+
+      - name: ⚙️ 7. إعداد GitHub Pages
+        uses: actions/configure-pages@v4
+
+      - name: 📎 8. رفع الملفات للنشر
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.'
+          retention-days: 1
+
+      - name: 🚀 9. النشر على GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+      - name: ✅ 10. تأكيد الانتهاء
+        run: |
+          echo "🎉 تم تحديث V2Nodes ونشره بنجاح!"
+          echo "🔗 رابط الموقع: ${{ steps.deployment.outputs.page_url }}"
