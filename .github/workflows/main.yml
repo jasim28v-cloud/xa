@@ -21,24 +21,24 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     
     steps:
-      - name: 📥 1. استنساخ المستودع
+      - name: 📥 استنساخ المستودع
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: 🐍 2. تنصيب بايثون
+      - name: 🐍 تنصيب بايثون
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
 
-      - name: 📦 3. تنصيب مكتبات بايثون
+      - name: 📦 تنصيب المكتبات
         run: pip install requests
 
-      - name: 🚀 4. تشغيل سكريبت الكشط
+      - name: 🚀 تشغيل الكشط
         run: python scraper.py
         timeout-minutes: 10
 
-      - name: 📊 5. التحقق من وجود تغييرات
+      - name: 📊 التحقق من التغييرات
         id: check_changes
         run: |
           if [[ -n "$(git status --porcelain)" ]]; then
@@ -47,29 +47,29 @@ jobs:
             echo "changes_detected=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: 📤 6. رفع التغييرات إلى المستودع
+      - name: 📤 رفع التغييرات
         if: steps.check_changes.outputs.changes_detected == 'true'
         run: |
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
           git add -A
-          git commit -m "🔄 تحديث تلقائي V2Nodes - $(date +'%Y-%m-%d %H:%M')"
+          git commit -m "🔄 تحديث V2Nodes - $(date +'%Y-%m-%d %H:%M')"
           git push origin main
 
-      - name: ⚙️ 7. إعداد GitHub Pages
+      - name: ⚙️ إعداد GitHub Pages
         uses: actions/configure-pages@v4
 
-      - name: 📎 8. رفع الملفات للنشر
+      - name: 📎 رفع الملفات للنشر
         uses: actions/upload-pages-artifact@v3
         with:
           path: '.'
           retention-days: 1
 
-      - name: 🚀 9. النشر على GitHub Pages
+      - name: 🚀 النشر على GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
 
-      - name: ✅ 10. تأكيد الانتهاء
+      - name: ✅ تأكيد الانتهاء
         run: |
           echo "🎉 تم تحديث V2Nodes ونشره بنجاح!"
           echo "🔗 رابط الموقع: ${{ steps.deployment.outputs.page_url }}"
